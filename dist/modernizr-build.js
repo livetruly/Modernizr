@@ -26,6 +26,7 @@
     _config: {
       classPrefix : '',
       enableClasses : true,
+      enableJSClass : true,
       usePrefixes : true
     },
 
@@ -157,11 +158,13 @@
     var className = docElement.className;
     var classPrefix = Modernizr._config.classPrefix || '';
 
-    // Change `no-js` to `js` (we do this regardles of the `enableClasses`
+    // Change `no-js` to `js` (we do this independently of the `enableClasses`
     // option)
     // Handle classPrefix on this too
-    var reJS = new RegExp('(^|\\s)'+classPrefix+'no-js(\\s|$)');
-    className = className.replace(reJS, '$1'+classPrefix+'js$2');
+    if(Modernizr._config.enableJSClass) {
+      var reJS = new RegExp('(^|\\s)'+classPrefix+'no-js(\\s|$)');
+      className = className.replace(reJS, '$1'+classPrefix+'js$2');
+    }
 
     if(Modernizr._config.enableClasses) {
       // Add the new classes
@@ -1342,6 +1345,54 @@ The API has been [heavily criticized](http://alistapart.com/article/application-
 
 /*!
 {
+  "name" : "HTML5 Audio Element",
+  "property": "audio",
+  "tags" : ["html5", "audio", "media"]
+}
+!*/
+/* DOC
+Detects the audio element
+*/
+
+  // This tests evaluates support of the audio element, as well as
+  // testing what types of content it supports.
+  //
+  // We're using the Boolean constructor here, so that we can extend the value
+  // e.g.  Modernizr.audio     // true
+  //       Modernizr.audio.ogg // 'probably'
+  //
+  // Codec values from : github.com/NielsLeenheer/html5test/blob/9106a8/index.html#L845
+  //                     thx to NielsLeenheer and zcorpan
+
+  // Note: in some older browsers, "no" was a return value instead of empty string.
+  //   It was live in FF3.5.0 and 3.5.1, but fixed in 3.5.2
+  //   It was also live in Safari 4.0.0 - 4.0.4, but fixed in 4.0.5
+  Modernizr.addTest('audio', function() {
+    /* jshint -W053 */
+    var elem = createElement('audio');
+    var bool = false;
+
+    try {
+      if ( bool = !!elem.canPlayType ) {
+        bool      = new Boolean(bool);
+        bool.ogg  = elem.canPlayType('audio/ogg; codecs="vorbis"').replace(/^no$/,'');
+        bool.mp3  = elem.canPlayType('audio/mpeg;')               .replace(/^no$/,'');
+        bool.opus  = elem.canPlayType('audio/ogg; codecs="opus"') .replace(/^no$/,'');
+
+        // Mimetypes accepted:
+        //   developer.mozilla.org/En/Media_formats_supported_by_the_audio_and_video_elements
+        //   bit.ly/iphoneoscodecs
+        bool.wav  = elem.canPlayType('audio/wav; codecs="1"')     .replace(/^no$/,'');
+        bool.m4a  = ( elem.canPlayType('audio/x-m4a;')            ||
+                     elem.canPlayType('audio/aac;'))             .replace(/^no$/,'');
+      }
+    } catch(e) { }
+
+    return bool;
+  });
+
+/*!
+{
   "name": "Audio Loop Attribute",
   "property": "audioloop",
   "tags": ["audio", "media"]
@@ -1395,51 +1446,23 @@ Detects the older non standard webaudio API, (as opposed to the standards based 
 
 /*!
 {
-  "name" : "HTML5 Audio Element",
-  "property": "audio",
-  "tags" : ["html5", "audio", "media"]
+  "name": "Battery API",
+  "property": "batteryapi",
+  "aliases": ["battery-api"],
+  "builderAliases": ["battery_api"],
+  "tags": ["device", "media"],
+  "authors": ["Paul Sayre"],
+  "notes": [{
+    "name": "MDN documentation",
+    "href": "https://developer.mozilla.org/en/DOM/window.navigator.mozBattery"
+  }]
 }
 !*/
 /* DOC
-Detects the audio element
+Detect support for the Battery API, for accessing information about the system's battery charge level.
 */
 
-  // This tests evaluates support of the audio element, as well as
-  // testing what types of content it supports.
-  //
-  // We're using the Boolean constructor here, so that we can extend the value
-  // e.g.  Modernizr.audio     // true
-  //       Modernizr.audio.ogg // 'probably'
-  //
-  // Codec values from : github.com/NielsLeenheer/html5test/blob/9106a8/index.html#L845
-  //                     thx to NielsLeenheer and zcorpan
-
-  // Note: in some older browsers, "no" was a return value instead of empty string.
-  //   It was live in FF3.5.0 and 3.5.1, but fixed in 3.5.2
-  //   It was also live in Safari 4.0.0 - 4.0.4, but fixed in 4.0.5
-  Modernizr.addTest('audio', function() {
-    /* jshint -W053 */
-    var elem = createElement('audio');
-    var bool = false;
-
-    try {
-      if ( bool = !!elem.canPlayType ) {
-        bool      = new Boolean(bool);
-        bool.ogg  = elem.canPlayType('audio/ogg; codecs="vorbis"').replace(/^no$/,'');
-        bool.mp3  = elem.canPlayType('audio/mpeg;')               .replace(/^no$/,'');
-        bool.opus  = elem.canPlayType('audio/ogg; codecs="opus"') .replace(/^no$/,'');
-
-        // Mimetypes accepted:
-        //   developer.mozilla.org/En/Media_formats_supported_by_the_audio_and_video_elements
-        //   bit.ly/iphoneoscodecs
-        bool.wav  = elem.canPlayType('audio/wav; codecs="1"')     .replace(/^no$/,'');
-        bool.m4a  = ( elem.canPlayType('audio/x-m4a;')            ||
-                     elem.canPlayType('audio/aac;'))             .replace(/^no$/,'');
-      }
-    } catch(e) { }
-
-    return bool;
-  });
+  Modernizr.addTest('batteryapi', !!prefixed('battery', navigator), { aliases: ['battery-api'] });
 
 /*!
 {
@@ -1463,26 +1486,6 @@ Enable a developer to remove CPU intensive CSS/JS when battery is low
     var battery = prefixed('battery', navigator);
     return !!(battery && !battery.charging && battery.level <= minLevel);
   });
-
-/*!
-{
-  "name": "Battery API",
-  "property": "batteryapi",
-  "aliases": ["battery-api"],
-  "builderAliases": ["battery_api"],
-  "tags": ["device", "media"],
-  "authors": ["Paul Sayre"],
-  "notes": [{
-    "name": "MDN documentation",
-    "href": "https://developer.mozilla.org/en/DOM/window.navigator.mozBattery"
-  }]
-}
-!*/
-/* DOC
-Detect support for the Battery API, for accessing information about the system's battery charge level.
-*/
-
-  Modernizr.addTest('batteryapi', !!prefixed('battery', navigator), { aliases: ['battery-api'] });
 
 /*!
 {
@@ -1606,26 +1609,6 @@ Detects support for the `contenteditable` attribute of elements, allowing their 
     div.contentEditable = true;
     return div.contentEditable === 'true';
   });
-
-/*!
-{
-  "name": "Content Security Policy",
-  "property": "contentsecuritypolicy",
-  "tags": ["security"],
-  "notes": [{
-    "name": "W3C spec",
-    "href": "http://www.w3.org/TR/CSP/"
-  },{
-    "name": "MDN documentation",
-    "href": "https://developer.mozilla.org/en-US/docs/Security/CSP"
-  }]
-}
-!*/
-/* DOC
-Detects support for the Content Security Policy protocol for mitigating and reporting security attacks.
-*/
-
-  Modernizr.addTest('contentsecuritypolicy', ('securityPolicy' in document || 'SecurityPolicy' in document));
 
 /*!
 {
@@ -1790,6 +1773,29 @@ Detects whether or not elements can be animated using CSS
 */
 
   Modernizr.addTest('cssanimations', testAllProps('animationName', 'a', true));
+
+/*!
+{
+  "name": "Appearance",
+  "property": "appearance",
+  "caniuse": "css-appearance",
+  "tags": ["css"],
+  "notes": [{
+    "name": "MDN documentation",
+    "href": "https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-appearance"
+  },{
+    "name": "CSS-Tricks CSS Almanac: appearance",
+    "href": "http://css-tricks.com/almanac/properties/a/appearance/"
+  }]
+}
+!*/
+/* DOC
+Detects support for the `appearance` css property, which is used to make an
+element inherit the style of a standard user interface element. It can also be
+used to remove the default styles of an element, such as input and buttons.
+*/
+
+  Modernizr.addTest('appearance', testAllProps('appearance'));
 
 /*!
 {
@@ -2055,27 +2061,6 @@ Method of allowing calculated values for length units. For example:
     return !!el.style.length;
   });
 
-/*!
-{
-  "name": "CSS Font ch Units",
-  "authors": ["Ron Waldon (@jokeyrhyme)"],
-  "property": "csschunit",
-  "tags": ["css"],
-  "notes": [{
-    "name": "W3C Spec",
-    "href": "http://www.w3.org/TR/css3-values/#font-relative-lengths"
-  }]
-}
-!*/
-
-  Modernizr.addTest('csschunit', function () {
-    var elemStyle = modElem.elem.style;
-    try {
-      elemStyle.fontSize = '3ch';
-    } catch (e) { }
-    return elemStyle.fontSize.indexOf('ch') !== -1;
-  });
-
 
   var testStyles = ModernizrProto.testStyles = injectElementWithStyles;
   
@@ -2100,6 +2085,27 @@ Method of allowing calculated values for length units. For example:
       elem.appendChild(cb);
       return cb.offsetLeft === 20;
     });
+  });
+
+/*!
+{
+  "name": "CSS Font ch Units",
+  "authors": ["Ron Waldon (@jokeyrhyme)"],
+  "property": "csschunit",
+  "tags": ["css"],
+  "notes": [{
+    "name": "W3C Spec",
+    "href": "http://www.w3.org/TR/css3-values/#font-relative-lengths"
+  }]
+}
+!*/
+
+  Modernizr.addTest('csschunit', function () {
+    var elemStyle = modElem.elem.style;
+    try {
+      elemStyle.fontSize = '3ch';
+    } catch (e) { }
+    return elemStyle.fontSize.indexOf('ch') !== -1;
   });
 
 /*!
@@ -2724,6 +2730,29 @@ else {
       });
 
     }
+  });
+
+/*!
+{
+  "name": "CSS :invalid pseudo-class",
+  "property": "cssinvalid",
+  "notes": [{
+    "name": "MDN documentation",
+    "href": "https://developer.mozilla.org/en-US/docs/Web/CSS/:invalid"
+  }]
+}
+!*/
+/* DOC
+  Detects support for the ':invalid' CSS pseudo-class.
+*/
+
+  Modernizr.addTest('cssinvalid', function() {
+    return testStyles('#modernizr input{height:0;border:0;padding:0;margin:0;width:10px} #modernizr input:invalid{width:50px}', function(elem) {
+      var input = createElement('input');
+      input.required = true;
+      elem.appendChild(input);
+      return input.clientWidth > 10;
+    });
   });
 
 /*!
@@ -3374,18 +3403,6 @@ Detects support for the ':target' CSS pseudo-class.
 
 /*!
 {
-  "name": "CSS textshadow",
-  "property": "textshadow",
-  "caniuse": "css-textshadow",
-  "tags": ["css"],
-  "knownBugs": ["FF3.0 will false positive on this test"]
-}
-!*/
-
-  Modernizr.addTest('textshadow', testProp('textShadow', '1px 1px'));
-
-/*!
-{
   "name": "CSS text-align-last",
   "property": "textalignlast",
   "tags": ["css"],
@@ -3401,6 +3418,18 @@ Detects support for the ':target' CSS pseudo-class.
 !*/
 
   Modernizr.addTest('textalignlast', testAllProps('textAlignLast'));
+
+/*!
+{
+  "name": "CSS textshadow",
+  "property": "textshadow",
+  "caniuse": "css-textshadow",
+  "tags": ["css"],
+  "knownBugs": ["FF3.0 will false positive on this test"]
+}
+!*/
+
+  Modernizr.addTest('textshadow', testProp('textShadow', '1px 1px'));
 
 /*!
 {
@@ -3493,6 +3522,28 @@ Detects support for `transform-style: preserve-3d`, for getting a proper 3D pers
 
   //https://github.com/Modernizr/Modernizr/issues/250
   Modernizr.addTest('userselect', testAllProps('userSelect', 'none', true));
+
+/*!
+{
+  "name": "CSS :valid pseudo-class",
+  "property": "cssvalid",
+  "notes": [{
+    "name": "MDN documentation",
+    "href": "https://developer.mozilla.org/en-US/docs/Web/CSS/:valid"
+  }]
+}
+!*/
+/* DOC
+  Detects support for the ':valid' CSS pseudo-class.
+*/
+
+  Modernizr.addTest('cssvalid', function() {
+    return testStyles('#modernizr input{height:0;border:0;padding:0;margin:0;width:10px} #modernizr input:valid{width:50px}', function(elem) {
+      var input = createElement('input');
+      elem.appendChild(input);
+      return input.clientWidth > 10;
+    });
+  });
 
 /*!
 {
@@ -3828,21 +3879,6 @@ Append multiple elements to the DOM within a single insertion.
 
 /*!
 {
-  "name": "microdata",
-  "property": "microdata",
-  "tags": ["dom"],
-  "builderAliases": ["dom_microdata"],
-  "notes": [{
-    "name": "W3 Spec",
-    "href": "http://www.w3.org/TR/html5/microdata.html"
-  }]
-}
-!*/
-
-  Modernizr.addTest('microdata', 'getItems' in document);
-
-/*!
-{
   "name": "[hidden] Attribute",
   "property": "hidden",
   "tags": ["dom"],
@@ -3862,6 +3898,21 @@ Does the browser support the HTML5 [hidden] attribute?
 */
 
   Modernizr.addTest('hidden', 'hidden' in createElement('a'));
+
+/*!
+{
+  "name": "microdata",
+  "property": "microdata",
+  "tags": ["dom"],
+  "builderAliases": ["dom_microdata"],
+  "notes": [{
+    "name": "W3 Spec",
+    "href": "http://www.w3.org/TR/html5/microdata.html"
+  }]
+}
+!*/
+
+  Modernizr.addTest('microdata', 'getItems' in document);
 
 /*!
 {
@@ -3906,32 +3957,6 @@ Detects support for native drag & drop of elements.
   Modernizr.addTest('draganddrop', function() {
     var div = createElement('div');
     return ('draggable' in div) || ('ondragstart' in div && 'ondrop' in div);
-  });
-
-/*!
-{
-  "name": "Unknown Elements",
-  "property": "unknownelements",
-  "tags": ["elem"],
-  "notes": [{
-    "name": "The Story of the HTML5 Shiv",
-    "href": "http://www.paulirish.com/2011/the-history-of-the-html5-shiv/"
-  }, {
-    "name": "original implementation of detect code",
-    "href": "https://github.com/aFarkas/html5shiv/blob/bf4fcc4/src/html5shiv.js#L36"
-  }],
-  "polyfills": ["html5shiv"],
-  "authors": ["Ron Waldon (@jokeyrhyme)"]
-}
-!*/
-/* DOC
-Does the browser support HTML with non-standard / new elements?
-*/
-
-  Modernizr.addTest('unknownelements', function () {
-    var a = createElement('a');
-    a.innerHTML = '<xyz></xyz>';
-    return a.childNodes.length === 1;
   });
 
 
@@ -4227,6 +4252,32 @@ Modernizr.input.step
 
 /*!
 {
+  "name": "Unknown Elements",
+  "property": "unknownelements",
+  "tags": ["elem"],
+  "notes": [{
+    "name": "The Story of the HTML5 Shiv",
+    "href": "http://www.paulirish.com/2011/the-history-of-the-html5-shiv/"
+  }, {
+    "name": "original implementation of detect code",
+    "href": "https://github.com/aFarkas/html5shiv/blob/bf4fcc4/src/html5shiv.js#L36"
+  }],
+  "polyfills": ["html5shiv"],
+  "authors": ["Ron Waldon (@jokeyrhyme)"]
+}
+!*/
+/* DOC
+Does the browser support HTML with non-standard / new elements?
+*/
+
+  Modernizr.addTest('unknownelements', function () {
+    var a = createElement('a');
+    a.innerHTML = '<xyz></xyz>';
+    return a.childNodes.length === 1;
+  });
+
+/*!
+{
   "name": "Emoji",
   "property": "emoji"
 }
@@ -4406,6 +4457,132 @@ Check if browser implements ECMAScript 5 String per specification.
 
 /*!
 {
+  "name": "JSON",
+  "property": "json",
+  "caniuse": "json",
+  "notes": [{
+    "name": "MDN documentation",
+    "href": "http://developer.mozilla.org/en/JSON"
+  }],
+  "polyfills": ["json2"]
+}
+!*/
+/* DOC
+Detects native support for JSON handling functions.
+*/
+
+  // this will also succeed if you've loaded the JSON2.js polyfill ahead of time
+  //   ... but that should be obvious. :)
+
+  Modernizr.addTest('json', 'JSON' in window && 'parse' in JSON && 'stringify' in JSON);
+
+/*!
+{
+  "name": "ES5 Syntax",
+  "property": "es5syntax",
+  "notes": [{
+    "name": "ECMAScript 5.1 Language Specification",
+    "href": "http://www.ecma-international.org/ecma-262/5.1/"
+  }, {
+    "name": "original implementation of detect code",
+    "href": "http://kangax.github.io/es5-compat-table/"
+  }],
+  "authors": ["Ron Waldon (@jokeyrhyme)"],
+  "warnings": ["This detect uses `eval()`, so CSP may be a problem."],
+  "tags": ["es5"]
+}
+!*/
+/* DOC
+Check if browser accepts ECMAScript 5 syntax.
+*/
+
+  Modernizr.addTest('es5syntax', function () {
+    var value, obj, stringAccess, getter, setter, reservedWords, zeroWidthChars;
+    try {
+      // Property access on strings
+      stringAccess = eval('"foobar"[3] === "b"');
+      // Getter in property initializer
+      getter = eval('({ get x(){ return 1 } }).x === 1');
+      eval('({ set x(v){ value = v; } }).x = 1');
+      // Setter in property initializer
+      setter = value === 1;
+      // Reserved words as property names
+      eval('obj = ({ if: 1 })');
+      reservedWords = obj['if'] === 1;
+      // Zero-width characters in identifiers
+      zeroWidthChars = eval('_\u200c\u200d = true');
+
+      return stringAccess && getter && setter && reservedWords && zeroWidthChars;
+    } catch (ignore) {
+      return false;
+    }
+  });
+
+/*!
+{
+  "name": "ES5 Immutable Undefined",
+  "property": "es5undefined",
+  "notes": [{
+    "name": "ECMAScript 5.1 Language Specification",
+    "href": "http://www.ecma-international.org/ecma-262/5.1/"
+  }, {
+    "name": "original implementation of detect code",
+    "href": "http://kangax.github.io/es5-compat-table/"
+  }],
+  "authors": ["Ron Waldon (@jokeyrhyme)"],
+  "tags": ["es5"]
+}
+!*/
+/* DOC
+Check if browser prevents assignment to global `undefined` per ECMAScript 5.
+*/
+
+  Modernizr.addTest('es5undefined', function () {
+    var result, originalUndefined;
+    try {
+      originalUndefined = window.undefined;
+      window.undefined = 12345;
+      result = typeof window.undefined === 'undefined';
+      window.undefined = originalUndefined;
+    } catch (e) {
+      return false;
+    }
+    return result;
+  });
+
+/*!
+{
+  "name": "ES5",
+  "property": "es5",
+  "notes": [{
+    "name": "ECMAScript 5.1 Language Specification",
+    "href": "http://www.ecma-international.org/ecma-262/5.1/"
+  }],
+  "polyfills": ["es5shim", "es5sham"],
+  "authors": ["Ron Waldon (@jokeyrhyme)"],
+  "tags": ["es5"]
+}
+!*/
+/* DOC
+Check if browser implements everything as specified in ECMAScript 5.
+*/
+
+  Modernizr.addTest('es5', function () {
+    return !!(
+      Modernizr.es5array &&
+      Modernizr.es5date &&
+      Modernizr.es5function &&
+      Modernizr.es5object &&
+      Modernizr.strictmode &&
+      Modernizr.es5string &&
+      Modernizr.json &&
+      Modernizr.es5syntax &&
+      Modernizr.es5undefined
+    );
+  });
+
+/*!
+{
   "name": "ES6 Array",
   "property": "es6array",
   "notes": [{
@@ -4432,6 +4609,42 @@ Check if browser implements ECMAScript 6 Array per specification.
     Array.prototype.values &&
     Array.from &&
     Array.of));
+
+/*!
+{
+  "name": "ES5 String.prototype.contains",
+  "property": "contains",
+  "authors": ["Robert Kowalski"],
+  "tags": ["es6"]
+}
+!*/
+/* DOC
+Check if browser implements ECMAScript 6 `String.prototype.contains` per specification.
+*/
+
+  Modernizr.addTest('contains', is(String.prototype.contains, 'function'));
+
+/*!
+{
+  "name": "ES6 Generators",
+  "property": "generators",
+  "authors": ["Michael Kachanovskyi"],
+  "tags": ["es6"]
+}
+!*/
+/* DOC
+Check if browser implements ECMAScript 6 Generators per specification.
+*/
+
+  Modernizr.addTest('generators', function() {
+    try {
+      /* jshint evil: true */
+      new Function('function* test() {}')();
+    } catch(e) {
+      return false;
+    }
+    return true;
+  });
 
 /*!
 {
@@ -4522,172 +4735,6 @@ Check if browser implements ECMAScript 6 Object per specification.
 
 /*!
 {
-  "name": "ES6 String",
-  "property": "es6string",
-  "notes": [{
-    "name": "unofficial ECMAScript 6 draft specification",
-    "href": "http://people.mozilla.org/~jorendorff/es6-draft.html"
-  }],
-  "polyfills": ["es6shim"],
-  "authors": ["Ron Waldon (@jokeyrhyme)"],
-  "warnings": ["ECMAScript 6 is still a only a draft, so this detect may not match the final specification or implementations."],
-  "tags": ["es6"]
-}
-!*/
-/* DOC
-Check if browser implements ECMAScript 6 String per specification.
-*/
-
-  Modernizr.addTest('es6string', !!(String.fromCodePoint &&
-    String.raw &&
-    String.prototype.codePointAt &&
-    String.prototype.repeat &&
-    String.prototype.startsWith &&
-    String.prototype.endsWith &&
-    String.prototype.contains));
-
-/*!
-{
-  "name": "ES5 Syntax",
-  "property": "es5syntax",
-  "notes": [{
-    "name": "ECMAScript 5.1 Language Specification",
-    "href": "http://www.ecma-international.org/ecma-262/5.1/"
-  }, {
-    "name": "original implementation of detect code",
-    "href": "http://kangax.github.io/es5-compat-table/"
-  }],
-  "authors": ["Ron Waldon (@jokeyrhyme)"],
-  "warnings": ["This detect uses `eval()`, so CSP may be a problem."],
-  "tags": ["es5"]
-}
-!*/
-/* DOC
-Check if browser accepts ECMAScript 5 syntax.
-*/
-
-  Modernizr.addTest('es5syntax', function () {
-    var value, obj, stringAccess, getter, setter, reservedWords, zeroWidthChars;
-    try {
-      // Property access on strings
-      stringAccess = eval('"foobar"[3] === "b"');
-      // Getter in property initializer
-      getter = eval('({ get x(){ return 1 } }).x === 1');
-      eval('({ set x(v){ value = v; } }).x = 1');
-      // Setter in property initializer
-      setter = value === 1;
-      // Reserved words as property names
-      eval('obj = ({ if: 1 })');
-      reservedWords = obj['if'] === 1;
-      // Zero-width characters in identifiers
-      zeroWidthChars = eval('_\u200c\u200d = true');
-
-      return stringAccess && getter && setter && reservedWords && zeroWidthChars;
-    } catch (ignore) {
-      return false;
-    }
-  });
-
-/*!
-{
-  "name": "ES5 Immutable Undefined",
-  "property": "es5undefined",
-  "notes": [{
-    "name": "ECMAScript 5.1 Language Specification",
-    "href": "http://www.ecma-international.org/ecma-262/5.1/"
-  }, {
-    "name": "original implementation of detect code",
-    "href": "http://kangax.github.io/es5-compat-table/"
-  }],
-  "authors": ["Ron Waldon (@jokeyrhyme)"],
-  "tags": ["es5"]
-}
-!*/
-/* DOC
-Check if browser prevents assignment to global `undefined` per ECMAScript 5.
-*/
-
-  Modernizr.addTest('es5undefined', function () {
-    var result, originalUndefined;
-    try {
-      originalUndefined = window.undefined;
-      window.undefined = 12345;
-      result = typeof window.undefined === 'undefined';
-      window.undefined = originalUndefined;
-    } catch (e) {
-      return false;
-    }
-    return result;
-  });
-
-/*!
-{
-  "name": "JSON",
-  "property": "json",
-  "caniuse": "json",
-  "notes": [{
-    "name": "MDN documentation",
-    "href": "http://developer.mozilla.org/en/JSON"
-  }],
-  "polyfills": ["json2"]
-}
-!*/
-/* DOC
-Detects native support for JSON handling functions.
-*/
-
-  // this will also succeed if you've loaded the JSON2.js polyfill ahead of time
-  //   ... but that should be obvious. :)
-
-  Modernizr.addTest('json', 'JSON' in window && 'parse' in JSON && 'stringify' in JSON);
-
-/*!
-{
-  "name": "ES5",
-  "property": "es5",
-  "notes": [{
-    "name": "ECMAScript 5.1 Language Specification",
-    "href": "http://www.ecma-international.org/ecma-262/5.1/"
-  }],
-  "polyfills": ["es5shim", "es5sham"],
-  "authors": ["Ron Waldon (@jokeyrhyme)"],
-  "tags": ["es5"]
-}
-!*/
-/* DOC
-Check if browser implements everything as specified in ECMAScript 5.
-*/
-
-  Modernizr.addTest('es5', function () {
-    return !!(
-      Modernizr.es5array &&
-      Modernizr.es5date &&
-      Modernizr.es5function &&
-      Modernizr.es5object &&
-      Modernizr.strictmode &&
-      Modernizr.es5string &&
-      Modernizr.json &&
-      Modernizr.es5syntax &&
-      Modernizr.es5undefined
-    );
-  });
-
-/*!
-{
-  "name": "ES5 String.prototype.contains",
-  "property": "contains",
-  "authors": ["Robert Kowalski"],
-  "tags": ["es6"]
-}
-!*/
-/* DOC
-Check if browser implements ECMAScript 6 `String.prototype.contains` per specification.
-*/
-
-  Modernizr.addTest('contains', is(String.prototype.contains, 'function'));
-
-/*!
-{
   "name": "ES6 Promises",
   "property": "promises",
   "caniuse": "promises",
@@ -4729,25 +4776,29 @@ Check if browser implements ECMAScript 6 Promises per specification.
 
 /*!
 {
-  "name": "ES6 Generators",
-  "property": "generators",
-  "authors": ["Michael Kachanovskyi"],
+  "name": "ES6 String",
+  "property": "es6string",
+  "notes": [{
+    "name": "unofficial ECMAScript 6 draft specification",
+    "href": "http://people.mozilla.org/~jorendorff/es6-draft.html"
+  }],
+  "polyfills": ["es6shim"],
+  "authors": ["Ron Waldon (@jokeyrhyme)"],
+  "warnings": ["ECMAScript 6 is still a only a draft, so this detect may not match the final specification or implementations."],
   "tags": ["es6"]
 }
 !*/
 /* DOC
-Check if browser implements ECMAScript 6 Generators per specification.
+Check if browser implements ECMAScript 6 String per specification.
 */
 
-  Modernizr.addTest('generators', function() {
-    try {
-      /* jshint evil: true */
-      new Function('function* test() {}')();
-    } catch(e) {
-      return false;
-    }
-    return true;
-  });
+  Modernizr.addTest('es6string', !!(String.fromCodePoint &&
+    String.raw &&
+    String.prototype.codePointAt &&
+    String.prototype.repeat &&
+    String.prototype.startsWith &&
+    String.prototype.endsWith &&
+    String.prototype.contains));
 
 /*!
 {
@@ -5021,7 +5072,7 @@ Detects support flash, as well as flash blocking plugins
         bool.blocked = (result === 'blocked');
       }
       addTest('flash', function() { return bool; });
-      if (embed) {
+      if (embed && body.contains(embed)) {
         body.removeChild(embed);
       }
     };
@@ -5044,12 +5095,14 @@ Detects support flash, as well as flash blocking plugins
       // actually create an element to see what happens to it.
       var embed = createElement('embed');
       var body = getBody();
+      var blockedDetect;
       var inline_style;
 
       embed.type = 'application/x-shockwave-flash';
 
       // Need to do this in the body (fake or otherwise) otherwise IE8 complains
       body.appendChild(embed);
+      docElement.appendChild(body);
 
       // Pan doesn't exist in the embed if its IE (its on the ActiveXObjeect)
       // so this check is for all other browsers.
@@ -5058,11 +5111,17 @@ Detects support flash, as well as flash blocking plugins
         return;
       }
 
-      // If we have got this far, there is still a chance a userland plugin
-      // is blocking us (either changing the styles, or automatically removing
-      // the element). Both of these require us to take a step back for a moment
-      // to allow for them to get time of the thread, hence a setTimeout.
-      setTimeout(function() {
+      blockedDetect = function() {
+        // if we used a fake body originally, we need to restart this test, since
+        // we haven't been attached to the DOM, and therefore none of the blockers
+        // have had time to work.
+        if (!docElement.contains(body)) {
+          body = document.body || body;
+          embed = document.createElement('embed');
+          embed.type = 'application/x-shockwave-flash';
+          body.appendChild(embed);
+          return setTimeout(blockedDetect, 1000);
+        }
         if (!docElement.contains(embed)) {
           runTest('blocked');
         }
@@ -5079,11 +5138,18 @@ Detects support flash, as well as flash blocking plugins
           }
         }
 
-        // If we’re rockin’ a fake body, clean it up
-        if (body.fake) {
+        // If we’re rockin’ an attached fake body, clean it up
+        if (body.fake && body.parentNode) {
           body.parentNode.removeChild(body);
         }
-      }, 10);
+      };
+
+      // If we have got this far, there is still a chance a userland plugin
+      // is blocking us (either changing the styles, or automatically removing
+      // the element). Both of these require us to take a step back for a moment
+      // to allow for them to get time of the thread, hence a setTimeout.
+      //
+      setTimeout(blockedDetect, 10);
     }
   });
 
@@ -5624,11 +5690,12 @@ Detects support for the History API for manipulating the browser session history
     var ua = navigator.userAgent;
 
     // We only want Android 2 and 4.0, stock browser, and not Chrome which identifies
-    // itself as 'Mobile Safari' as well
+    // itself as 'Mobile Safari' as well, nor Windows Phone (issue #1471).
     if ((ua.indexOf('Android 2.') !== -1 ||
         (ua.indexOf('Android 4.0') !== -1)) &&
         ua.indexOf('Mobile Safari') !== -1 &&
-        ua.indexOf('Chrome') === -1) {
+        ua.indexOf('Chrome') === -1 &&
+        ua.indexOf('Windows Phone') === -1) {
       return false;
     }
 
@@ -6183,6 +6250,30 @@ Tests for server sent events aka eventsource.
 
   Modernizr.addTest('eventsource', 'EventSource' in window);
 
+/*!
+{
+  "name": "XMLHttpRequest xhr.responseType",
+  "property": "xhrresponsetype",
+  "tags": ["network"],
+  "notes": [{
+    "name": "XMLHttpRequest Living Standard",
+    "href": "http://xhr.spec.whatwg.org/#the-responsetype-attribute"
+  }]
+}
+!*/
+/* DOC
+Tests for XMLHttpRequest xhr.responseType.
+*/
+
+  Modernizr.addTest('xhrresponsetype', (function() {
+    if (typeof XMLHttpRequest == 'undefined') {
+      return false;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('get', '/', true);
+    return 'response' in xhr;
+  }()));
+
 
   // http://mathiasbynens.be/notes/xhr-responsetype-json#comment-4
   var testXhrType = function(type) {
@@ -6287,30 +6378,6 @@ Tests for XMLHttpRequest xhr.responseType='text'.
 */
 
   Modernizr.addTest('xhrresponsetypetext', testXhrType('text'));
-
-/*!
-{
-  "name": "XMLHttpRequest xhr.responseType",
-  "property": "xhrresponsetype",
-  "tags": ["network"],
-  "notes": [{
-    "name": "XMLHttpRequest Living Standard",
-    "href": "http://xhr.spec.whatwg.org/#the-responsetype-attribute"
-  }]
-}
-!*/
-/* DOC
-Tests for XMLHttpRequest xhr.responseType.
-*/
-
-  Modernizr.addTest('xhrresponsetype', (function() {
-    if (typeof XMLHttpRequest == 'undefined') {
-      return false;
-    }
-    var xhr = new XMLHttpRequest();
-    xhr.open('get', '/', true);
-    return 'response' in xhr;
-  }()));
 
 /*!
 {
@@ -6477,6 +6544,67 @@ Detects support for the `window.postMessage` protocol for cross-document messagi
 */
 
   Modernizr.addTest('postmessage', 'postMessage' in window);
+
+/*!
+{
+  "authors": ["Cătălin Mariș"],
+  "caniuse": "proximity",
+  "name": "Proximity API",
+  "notes": [{
+    "name": "MDN documentation",
+    "href": "https://developer.mozilla.org/en-US/docs/Web/API/Proximity_Events"
+  },{
+    "name": "W3C specification",
+    "href": "http://www.w3.org/TR/proximity/"
+  }],
+  "property": "proximity",
+  "tags": ["events", "proximity"]
+}
+!*/
+/* DOC
+Detects support for an API that allows users to get proximity related information from the device's proximity sensor.
+*/
+
+
+  Modernizr.addAsyncTest(function () {
+
+    var timeout;
+    var timeoutTime = 300;
+
+    function advertiseSupport() {
+
+      // Clean up after ourselves
+      clearTimeout(timeout);
+      window.removeEventListener('deviceproximity', advertiseSupport);
+
+      // Advertise support as the browser supports
+      // the API and the device has a proximity sensor
+      addTest('proximity', true);
+
+    }
+
+    // Check if the browser has support for the API
+    if ( 'ondeviceproximity' in window && 'onuserproximity' in window ) {
+
+      // Check if the device has a proximity sensor
+      // ( devices without such a sensor support the events but
+      //   will never fire them resulting in a false positive )
+      window.addEventListener('deviceproximity', advertiseSupport);
+
+      // If the event doesn't fire in a reasonable amount of time,
+      // it means that the device doesn't have a proximity sensor,
+      // thus, we can advertise the "lack" of support
+      timeout = setTimeout(function() {
+        window.removeEventListener('deviceproximity', advertiseSupport);
+        addTest('proximity', false);
+      }, timeoutTime);
+
+    } else {
+      addTest('proximity', false);
+    }
+
+  });
+
 
 /*!
 {
@@ -6720,6 +6848,31 @@ Support for the `scoped` attribute of the `<style>` element.
 
 /*!
 {
+  "name": "SVG",
+  "property": "svg",
+  "caniuse": "svg",
+  "tags": ["svg"],
+  "authors": ["Erik Dahlstrom"],
+  "polyfills": [
+    "svgweb",
+    "raphael",
+    "amplesdk",
+    "canvg",
+    "svg-boilerplate",
+    "sie",
+    "dojogfx",
+    "fabricjs"
+  ]
+}
+!*/
+/* DOC
+Detects support for SVG in `<embed>` or `<object>` elements.
+*/
+
+  Modernizr.addTest('svg', !!document.createElementNS && !!document.createElementNS('http://www.w3.org/2000/svg', 'svg').createSVGRect);
+
+/*!
+{
   "name": "SVG as an <img> tag source",
   "property": "svgasimg",
   "caniuse" : "svg-img",
@@ -6797,6 +6950,26 @@ See [this discussion](http://github.com/Modernizr/Modernizr/issues/213) regardin
 
 /*!
 {
+  "name": "SVG foreignObject",
+  "property": "svgforeignobject",
+  "tags": ["svg"],
+  "notes": [{
+    "name": "W3C Spec",
+    "href": "http://www.w3.org/TR/SVG11/extend.html"
+  }]
+}
+!*/
+/* DOC
+Detects support for foreignObject tag in SVG.
+*/
+
+  Modernizr.addTest('svgforeignobject', function() {
+    return !!document.createElementNS &&
+      /SVGForeignObject/.test(toStringFn.call(document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject')));
+  });
+
+/*!
+{
   "name": "Inline SVG",
   "property": "inlinesvg",
   "caniuse": "svg-html5",
@@ -6820,26 +6993,6 @@ Detects support for inline SVG in HTML (not within XHTML).
 
 /*!
 {
-  "name": "SVG foreignObject",
-  "property": "svgforeignobject",
-  "tags": ["svg"],
-  "notes": [{
-    "name": "W3C Spec",
-    "href": "http://www.w3.org/TR/SVG11/extend.html"
-  }]
-}
-!*/
-/* DOC
-Detects support for foreignObject tag in SVG.
-*/
-
-  Modernizr.addTest('svgforeignobject', function() {
-    return !!document.createElementNS &&
-      /SVGForeignObject/.test(toStringFn.call(document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject')));
-  });
-
-/*!
-{
   "name": "SVG SMIL animation",
   "property": "smil",
   "caniuse": "svg-smil",
@@ -6859,28 +7012,28 @@ Detects support for foreignObject tag in SVG.
 
 /*!
 {
-  "name": "SVG",
-  "property": "svg",
-  "caniuse": "svg",
-  "tags": ["svg"],
-  "authors": ["Erik Dahlstrom"],
-  "polyfills": [
-    "svgweb",
-    "raphael",
-    "amplesdk",
-    "canvg",
-    "svg-boilerplate",
-    "sie",
-    "dojogfx",
-    "fabricjs"
-  ]
+  "name": "Template strings",
+  "property": "templatestrings",
+  "notes": [{
+    "name": "MDN Reference",
+    "href": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/template_strings#Browser_compatibility"
+  }]
 }
 !*/
 /* DOC
-Detects support for SVG in `<embed>` or `<object>` elements.
+Template strings are string literals allowing embedded expressions.
 */
 
-  Modernizr.addTest('svg', !!document.createElementNS && !!document.createElementNS('http://www.w3.org/2000/svg', 'svg').createSVGRect);
+  Modernizr.addTest('templatestrings', function() {
+    var supports;
+    try {
+      // A number of tools, including uglifyjs and require, break on a raw "`", so
+      // use an eval to get around that.
+      eval('``');
+      supports = true;
+    } catch (e) {}
+    return !!supports;
+  });
 
 /*!
 {
@@ -7331,11 +7484,11 @@ Checks for support of the autoplay attribute of the video element.
     elemStyle.width = 0;
 
     try {
-      if (Modernizr.video.h264) {
-        elem.src = 'data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAz5tb292AAAAbG12aGQAAAAAzaNacc2jWnEAAV+QAAFfkAABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAGGlvZHMAAAAAEICAgAcAT////3//AAACQ3RyYWsAAABcdGtoZAAAAAHNo1pxzaNacQAAAAEAAAAAAAFfkAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAEAAAABAAAAAAAd9tZGlhAAAAIG1kaGQAAAAAzaNacc2jWnEAAV+QAAFfkFXEAAAAAAAhaGRscgAAAAAAAAAAdmlkZQAAAAAAAAAAAAAAAAAAAAGWbWluZgAAABR2bWhkAAAAAQAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABVnN0YmwAAACpc3RzZAAAAAAAAAABAAAAmWF2YzEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAEAAQAEgAAABIAAAAAAAAAAEOSlZUL0FWQyBDb2RpbmcAAAAAAAAAAAAAAAAAAAAAAAAY//8AAAAxYXZjQwH0AAr/4QAZZ/QACq609NQYBBkAAAMAAQAAAwAKjxImoAEABWjOAa8gAAAAEmNvbHJuY2xjAAYAAQAGAAAAGHN0dHMAAAAAAAAAAQAAAAUAAEZQAAAAKHN0c3oAAAAAAAAAAAAAAAUAAAIqAAAACAAAAAgAAAAIAAAACAAAAChzdHNjAAAAAAAAAAIAAAABAAAABAAAAAEAAAACAAAAAQAAAAEAAAAYc3RjbwAAAAAAAAACAAADYgAABaQAAAAUc3RzcwAAAAAAAAABAAAAAQAAABFzZHRwAAAAAAREREREAAAAb3VkdGEAAABnbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpcgAAAAAAAAAAAAAAAAAAAAA6aWxzdAAAADKpdG9vAAAAKmRhdGEAAAABAAAAAEhhbmRCcmFrZSAwLjkuOCAyMDEyMDcxODAwAAACUm1kYXQAAAHkBgX/4NxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxMjAgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDExIC0gaHR0cDovL3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MCByZWY9MSBkZWJsb2NrPTE6MDowIGFuYWx5c2U9MHgxOjAgbWU9ZXNhIHN1Ym1lPTkgcHN5PTAgbWl4ZWRfcmVmPTAgbWVfcmFuZ2U9NCBjaHJvbWFfbWU9MSB0cmVsbGlzPTAgOHg4ZGN0PTAgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0wIGNocm9tYV9xcF9vZmZzZXQ9MCB0aHJlYWRzPTYgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTUwIGtleWludF9taW49NSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmM9Y3FwIG1idHJlZT0wIHFwPTAAgAAAAD5liISscR8A+E4ACAACFoAAITAAAgsAAPgYCoKgoC+L4vi+KAvi+L4YfAEAACMzgABF9AAEUGUgABDJiXnf4AAAAARBmiKUAAAABEGaQpQAAAAEQZpilAAAAARBmoKU';
-      }
-      else if (Modernizr.video.ogg) {
+      if (Modernizr.video.ogg) {
         elem.src = 'data:video/ogg;base64,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';
+      }
+      else if (Modernizr.video.h264) {
+        elem.src = 'data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAz5tb292AAAAbG12aGQAAAAAzaNacc2jWnEAAV+QAAFfkAABAAABAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAGGlvZHMAAAAAEICAgAcAT////3//AAACQ3RyYWsAAABcdGtoZAAAAAHNo1pxzaNacQAAAAEAAAAAAAFfkAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAEAAAAAAEAAAABAAAAAAAd9tZGlhAAAAIG1kaGQAAAAAzaNacc2jWnEAAV+QAAFfkFXEAAAAAAAhaGRscgAAAAAAAAAAdmlkZQAAAAAAAAAAAAAAAAAAAAGWbWluZgAAABR2bWhkAAAAAQAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADHVybCAAAAABAAABVnN0YmwAAACpc3RzZAAAAAAAAAABAAAAmWF2YzEAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAEAAQAEgAAABIAAAAAAAAAAEOSlZUL0FWQyBDb2RpbmcAAAAAAAAAAAAAAAAAAAAAAAAY//8AAAAxYXZjQwH0AAr/4QAZZ/QACq609NQYBBkAAAMAAQAAAwAKjxImoAEABWjOAa8gAAAAEmNvbHJuY2xjAAYAAQAGAAAAGHN0dHMAAAAAAAAAAQAAAAUAAEZQAAAAKHN0c3oAAAAAAAAAAAAAAAUAAAIqAAAACAAAAAgAAAAIAAAACAAAAChzdHNjAAAAAAAAAAIAAAABAAAABAAAAAEAAAACAAAAAQAAAAEAAAAYc3RjbwAAAAAAAAACAAADYgAABaQAAAAUc3RzcwAAAAAAAAABAAAAAQAAABFzZHRwAAAAAAREREREAAAAb3VkdGEAAABnbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpcgAAAAAAAAAAAAAAAAAAAAA6aWxzdAAAADKpdG9vAAAAKmRhdGEAAAABAAAAAEhhbmRCcmFrZSAwLjkuOCAyMDEyMDcxODAwAAACUm1kYXQAAAHkBgX/4NxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxMjAgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDExIC0gaHR0cDovL3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MCByZWY9MSBkZWJsb2NrPTE6MDowIGFuYWx5c2U9MHgxOjAgbWU9ZXNhIHN1Ym1lPTkgcHN5PTAgbWl4ZWRfcmVmPTAgbWVfcmFuZ2U9NCBjaHJvbWFfbWU9MSB0cmVsbGlzPTAgOHg4ZGN0PTAgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0wIGNocm9tYV9xcF9vZmZzZXQ9MCB0aHJlYWRzPTYgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTUwIGtleWludF9taW49NSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmM9Y3FwIG1idHJlZT0wIHFwPTAAgAAAAD5liISscR8A+E4ACAACFoAAITAAAgsAAPgYCoKgoC+L4vi+KAvi+L4YfAEAACMzgABF9AAEUGUgABDJiXnf4AAAAARBmiKUAAAABEGaQpQAAAAEQZpilAAAAARBmoKU';
       }
       else {
         addTest('videoautoplay', false);
@@ -7460,10 +7613,11 @@ Detects support for the Web Animation API, a way to create css animations in js
 
   Modernizr.addTest('webgl', function() {
     var canvas = createElement('canvas');
-    if ('supportsContext' in canvas) {
-      return canvas.supportsContext('webgl') || canvas.supportsContext('experimental-webgl');
+    var supports = 'probablySupportsContext' in canvas ? 'probablySupportsContext' :  'supportsContext';
+    if (supports in canvas) {
+      return canvas[supports]('webgl') || canvas[supports]('experimental-webgl');
     }
-    return !!window.WebGLRenderingContext;
+    return 'WebGLRenderingContext' in window;
   });
 
 /*!
@@ -7534,23 +7688,6 @@ if ('OES_vertex_array_object' in Modernizr.webglextensions) {
 
 /*!
 {
-  "name": "getUserMedia",
-  "property": "getusermedia",
-  "caniuse": "stream",
-  "tags": ["webrtc"],
-  "authors": ["Eric Bidelman"],
-  "notes": [{
-    "name": "W3C Media Capture and Streams spec",
-    "href": "http://www.w3.org/TR/mediacapture-streams/"
-  }],
-  "polyfills": ["getusermedia"]
-}
-!*/
-
-  Modernizr.addTest('getusermedia', !!prefixed('getUserMedia', navigator));
-
-/*!
-{
   "name": "RTC Peer Connection",
   "property": "peerconnection",
   "tags": ["webrtc"],
@@ -7566,32 +7703,54 @@ if ('OES_vertex_array_object' in Modernizr.webglextensions) {
 
 /*!
 {
-  "name": "Binary WebSockets",
-  "property": "websocketsbinary",
-  "tags": ["websockets"],
-  "builderAliases": ["websockets_binary"]
+  "name": "RTC Data Channel",
+  "property": "datachannel",
+  "notes": [{
+    "name": "HTML5 Rocks! Article",
+    "href": "http://www.html5rocks.com/en/tutorials/webrtc/datachannels/"
+  }]
+}
+!*/
+/* DOC
+Detect for the RTCDataChannel API that allows for transfer data directly from one peer to another
+*/
+
+
+  Modernizr.addTest('datachannel', function() {
+    if (!Modernizr.peerconnection) {
+      return false;
+    }
+    for (var i = 0, l = domPrefixes.length; i < l; i++) {
+      var peerConnectionConstructor = window[domPrefixes[i] + 'RTCPeerConnection'];
+
+      if (peerConnectionConstructor) {
+        var peerConnection = new peerConnectionConstructor({
+          'iceServers': [{ 'url': 'stun:0' }]
+        });
+
+        return 'createDataChannel' in peerConnection;
+      }
+
+    }
+    return false;
+  });
+
+/*!
+{
+  "name": "getUserMedia",
+  "property": "getusermedia",
+  "caniuse": "stream",
+  "tags": ["webrtc"],
+  "authors": ["Eric Bidelman"],
+  "notes": [{
+    "name": "W3C Media Capture and Streams spec",
+    "href": "http://www.w3.org/TR/mediacapture-streams/"
+  }],
+  "polyfills": ["getusermedia"]
 }
 !*/
 
-  // binaryType is truthy if there is support.. returns "blob" in new-ish chrome.
-  // plus.google.com/115535723976198353696/posts/ERN6zYozENV
-  // github.com/Modernizr/Modernizr/issues/370
-
-  Modernizr.addTest('websocketsbinary', function() {
-    var protocol = 'https:'==location.protocol?'wss':'ws',
-    protoBin;
-
-    if('WebSocket' in window) {
-      if( protoBin = 'binaryType' in WebSocket.prototype ) {
-        return protoBin;
-      }
-      try {
-        return !!(new WebSocket(protocol+'://.').binaryType);
-      } catch (e){}
-    }
-
-    return false;
-  });
+  Modernizr.addTest('getusermedia', !!prefixed('getUserMedia', navigator));
 
 /*!
 {
@@ -7621,6 +7780,35 @@ if ('OES_vertex_array_object' in Modernizr.webglextensions) {
 !*/
 
   Modernizr.addTest('websockets', 'WebSocket' in window && window.WebSocket.CLOSING === 2);
+
+/*!
+{
+  "name": "Binary WebSockets",
+  "property": "websocketsbinary",
+  "tags": ["websockets"],
+  "builderAliases": ["websockets_binary"]
+}
+!*/
+
+  // binaryType is truthy if there is support.. returns "blob" in new-ish chrome.
+  // plus.google.com/115535723976198353696/posts/ERN6zYozENV
+  // github.com/Modernizr/Modernizr/issues/370
+
+  Modernizr.addTest('websocketsbinary', function() {
+    var protocol = 'https:'==location.protocol?'wss':'ws',
+    protoBin;
+
+    if('WebSocket' in window) {
+      if( protoBin = 'binaryType' in WebSocket.prototype ) {
+        return protoBin;
+      }
+      try {
+        return !!(new WebSocket(protocol+'://.').binaryType);
+      } catch (e){}
+    }
+
+    return false;
+  });
 
 /*!
 {
